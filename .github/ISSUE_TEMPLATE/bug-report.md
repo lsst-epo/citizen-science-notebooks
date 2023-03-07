@@ -25,7 +25,7 @@ A clear and concise description of what actually happened.
 If applicable, add screenshots to help explain your problem. You do not need to post a screenshot of the output from the `send_data()` cell of the cSci notebook - please use the next section for that.
 
 **EDC Output**
-If applicable, copy and paste the output from the `Send the...to Zooniverse` cell into the below tilde wrapped box:
+If applicable, copy and paste the output from the `Send the...to Zooniverse` cell into the below triple-backtick wrapped box:
 
 ```
 SAMPLE OUTPUT
