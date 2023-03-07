@@ -2,6 +2,7 @@
 name: Technical Issue
 about: Report a technical issue/bug that you have observed while using the Citizen Science Notebooks in the RSP Notebook Aspect.
 labels: bug
+assignees: ericdrosas87, clareh
 ---
 
 **Describe the bug**
