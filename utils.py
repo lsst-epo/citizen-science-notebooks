@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import gc
 import numpy as np
 import pandas
+import time
 
 # Astropy imports
 from astropy.wcs import WCS
@@ -28,7 +29,7 @@ from lsst.afw.image import MultibandExposure
 import lsst.daf.butler as dafButler
 import lsst.geom
 import lsst.afw.display as afwDisplay
-
+afwDisplay.setDefaultBackend("matplotlib")
 
 plt.style.use('tableau-colorblind10')
 # Doesn't like the below when its in a .py file:
