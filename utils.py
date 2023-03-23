@@ -1,5 +1,3 @@
-## Making a utils.py to pull everything (imports and functions) from the tutorials so they're not as crowded
-
 #import packages used for generating subject set
 
 import matplotlib.pyplot as plt
@@ -29,11 +27,11 @@ from lsst.afw.image import MultibandExposure
 import lsst.daf.butler as dafButler
 import lsst.geom
 import lsst.afw.display as afwDisplay
+
+# Must explicitly set this to save figures
 afwDisplay.setDefaultBackend("matplotlib")
 
 plt.style.use('tableau-colorblind10')
-# Doesn't like the below when its in a .py file:
-#%matplotlib inline
 
 import warnings
 from astropy.units import UnitsWarning
