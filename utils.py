@@ -128,8 +128,7 @@ def setup_plotting():
     # Use lsst.afw.display with the matplotlib backend
     afwDisplay.setDefaultBackend('matplotlib')
     
-# Adding some defaults, but users can change this:
-def setup_butler(config = 'dp02', collection = '2.2i/runs/DP0.2'):    
+def setup_butler(config, collection):    
     service = get_tap_service()
     assert service is not None
     assert service.baseurl == "https://data.lsst.cloud/api/tap"
@@ -141,4 +140,4 @@ def setup_butler(config = 'dp02', collection = '2.2i/runs/DP0.2'):
     butler = dafButler.Butler(config, collections=collection)
     skymap = butler.get('skyMap')
     
-    return service, config, collection, butler, skymap
+    return service, butler, skymap
