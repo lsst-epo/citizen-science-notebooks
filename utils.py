@@ -94,17 +94,29 @@ def make_calexp_fig(cutout_image, ra, dec, out_name):
     ----------
     cutout image
     """
-    fig = plt.figure(figsize=(4, 4))
-    afw_display = afwDisplay.Display(frame=fig)
-    afw_display.scale('asinh', 'zscale')
-    afw_display.mtv(cutout_image.image)
+#     fig = plt.figure(figsize=(4, 4))
+#     afw_display = afwDisplay.Display(frame=fig)
+#     afw_display.scale('asinh', 'zscale')
+#     afw_display.mtv(cutout_image.image)
     
-    cutout_wcs = cutout_image.getWcs()
-    radec = geom.SpherePoint(ra, dec, geom.degrees)
-    xy = geom.PointI(cutout_wcs.skyToPixel(radec))
+#     cutout_wcs = cutout_image.getWcs()
+#     radec = geom.SpherePoint(ra, dec, geom.degrees)
+#     xy = geom.PointI(cutout_wcs.skyToPixel(radec))
     
-    afw_display.dot('x', xy.getX(), xy.getY(), size=1, ctype='orange')
+#     afw_display.dot('x', xy.getX(), xy.getY(), size=1, ctype='orange')
+#     plt.gca().axis('off')
+#     plt.savefig(out_name)
+    
+    fig = plt.figure()
+    plt.subplot(projection=WCS(cutout_image.getWcs().getFitsMetadata()))
+    calexp_extent = (cutout_image.getBBox().beginX, cutout_image.getBBox().endX,
+                 cutout_image.getBBox().beginY, cutout_image.getBBox().endY)
+    im = plt.imshow(cutout_image.image.array, cmap='gray', vmin=-200.0, vmax=1000,
+                extent=calexp_extent, origin='lower')
+    plt.colorbar(location='right', anchor=(0, 0.1))
     plt.gca().axis('off')
+    # plt.xlabel('Right Ascension')
+    # plt.ylabel('Declination')
     plt.savefig(out_name)
     
     return fig
