@@ -131,7 +131,7 @@ def setup_butler(config, collection):
     return service, butler, skymap
 
 
-def run_query(service, number_sources, use_center_coords, use_radius):
+def run_butler_query(service, number_sources, use_center_coords, use_radius):
     query = (
         "SELECT TOP "
         + str(number_sources)
@@ -153,3 +153,12 @@ def run_query(service, number_sources, use_center_coords, use_radius):
     results = service.search(query)
     assert len(results) == number_sources
     return results
+
+
+def prep_table(results, x, skymap):
+    results_table = results.to_table().to_pandas()
+    results_table["dataId"] = results_table.apply(
+        lambda x: get_bandtractpatch(x["coord_ra"], x["coord_dec"], skymap),
+        axis=1
+    )
+    return results_table
