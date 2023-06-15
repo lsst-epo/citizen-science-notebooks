@@ -141,3 +141,26 @@ def setup_butler(config, collection):
     skymap = butler.get('skyMap')
     
     return service, butler, skymap
+
+def run_query(number_sources, use_center_coords, use_radius):
+    query = (
+        "SELECT TOP "
+        + str(number_sources)
+        + " "
+        + "objectId, coord_ra, coord_dec, detect_isPrimary "
+        + "g_cModelFlux, r_cModelFlux, r_extendedness, r_inputCount "
+        + "FROM dp02_dc2_catalogs.Object "
+        + "WHERE CONTAINS(POINT('ICRS', coord_ra, coord_dec), "
+        + "CIRCLE('ICRS', "
+        + use_center_coords
+        + ", "
+        + use_radius
+        + ")) = 1 "
+        + "AND detect_isPrimary = 1 "
+        + "AND r_extendedness = 1 "
+        + "AND scisql_nanojanskyToAbMag(r_cModelFlux) < 18.0 "
+        + "ORDER by r_cModelFlux DESC"
+    )
+    results = service.search(query)
+    assert len(results) == number_sources
+    return results
