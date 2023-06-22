@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.2.0 - 2023-6-22
+### Changed
+- Removed the `__cit_sci_data_type` variable from the `Citizen_Science_Testing` notebook and its reference in the `Citizen_Science_SDK` notebook
+- Renamed the `send_data()` funtion to `send_image_data()` as part of an effort to define single-use-case functions
+
 ## 0.1.0 - 2023-3-02
 ### Added
 - This changelog
