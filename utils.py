@@ -2,6 +2,7 @@
 from astropy.units import UnitsWarning
 import matplotlib.pyplot as plt
 import gc
+import os
 import pandas
 import warnings
 
@@ -155,10 +156,42 @@ def run_butler_query(service, number_sources, use_center_coords, use_radius):
     return results
 
 
-def prep_table(results, x, skymap):
+def prep_table(results, skymap):
     results_table = results.to_table().to_pandas()
     results_table["dataId"] = results_table.apply(
         lambda x: get_bandtractpatch(x["coord_ra"], x["coord_dec"], skymap),
         axis=1
     )
     return results_table
+
+def make_manifest(results_table, butler, batch_dir):
+    # In-memory manifest file as an array of dicts
+    manifest = []
+
+    # Create directory if it does not already exist
+    if os.path.isdir(batch_dir) == False:
+        os.mkdir(batch_dir)
+
+    # Loop over results_table, or any other iterable provided by the PI:
+    for index, row in results_table.iterrows():
+        # Use the Butler to get data for each index, row
+        deepCoadd = butler.get("deepCoadd", dataId=row["dataId"])
+        filename = "cutout" + str(row["objectId"]) + ".png"
+        figout = make_figure(deepCoadd, batch_dir + filename)
+
+        # Create the CSV-file-row-as-dict
+        csv_row = {
+            "filename": filename,  # required column, do not change the column name
+            "sourceId": row.objectId,  # required column, do not change the column name
+            # Add your desired columns:
+            "coord_ra": row.coord_ra,
+            "coord_dec": row.coord_dec,
+            "g_cModelFlux": row.g_cModelFlux,
+            "r_cModelFlux": row.r_cModelFlux,
+            "r_extendedness": row.r_extendedness,
+            "r_inputCount": row.r_inputCount,
+        }
+        manifest.append(csv_row)
+        remove_figure(figout)
+    
+    return manifest
