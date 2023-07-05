@@ -164,7 +164,7 @@ def prep_table(results, skymap):
     )
     return results_table
 
-def make_manifest(results_table, butler, batch_dir):
+def make_manifest_and_images(results_table, butler, batch_dir):
     # In-memory manifest file as an array of dicts
     manifest = []
 
