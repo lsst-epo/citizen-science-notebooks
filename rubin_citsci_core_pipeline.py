@@ -12,6 +12,7 @@ from panoptes_client import Project, SubjectSet, Classification
 class CitSciPipeline:
     
     def __init__(self):
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/opt/lsst/software/jupyterlab/butler-secret/butler-gcs-idf-creds.json"
         self.vendor_batch_id = 0
         self.project_id = -1
         self.guid = ""
