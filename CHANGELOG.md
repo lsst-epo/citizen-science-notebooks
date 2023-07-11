@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.3.0 - 2023-7-11
+### Changed
+- Pedagogy text updates by bnevin
+- Testing notebook modified to make use of new Install notebook and `rubin_citsci_core_pipeline.py`
+
+### Added
+- Migrated majority of the code over from SDK notebook to the new `rubin_citsci_core_pipeline.py`
+
+### Removed
+- Removed the SDK notebook
+
 ## 0.2.0 - 2023-6-22
 ### Changed
 - Removed the `__cit_sci_data_type` variable from the `Citizen_Science_Testing` notebook and its reference in the `Citizen_Science_SDK` notebook
@@ -19,4 +30,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added timestamp and email to error output
 - Changed EDC endpoints to reference non-dev version of the RSP-data-exporter service
 
-### Removed
