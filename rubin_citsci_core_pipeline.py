@@ -31,7 +31,7 @@ class CitSciPipeline:
         print("You now are logged in to the Zooniverse platform.")
         return
 
-    def write_metadata_file(self, manifest, batch_dir):    
+    def write_manifest_file(self, manifest, batch_dir):    
         manifest_filename = 'manifest.csv'
         with open(batch_dir + manifest_filename, 'w', newline='') as csvfile:
             fieldnames = list(manifest[0].keys())
