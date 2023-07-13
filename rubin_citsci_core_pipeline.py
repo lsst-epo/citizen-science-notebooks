@@ -90,12 +90,6 @@ class CitSciPipeline:
         raw_response = urllib.request.urlopen(dl_response).read()
         response = raw_response.decode('UTF-8')
         return json.loads(response)
-
-    
-    
-    
-    
-    
     
     def send_tabular_data(subject_set_name, manifest_location):
         self.step = 0
@@ -104,70 +98,26 @@ class CitSciPipeline:
             h.update("Active batch exists!!! Continuing because this notebook is in debug mode")
             raise CitizenScienceError("You cannot send another batch of data while a subject set is still active on the Zooniverse platform - you can only send a new batch of data if all subject sets associated to a project have been completed.")
         
+        self.log_step("Creating new subject set")
         self.create_new_subject_set(subject_set_name)
+
+        upload_tabular_manifest(manifest_location)
+
+        self.edc_response = self.alert_edc_of_new_citsci_data(True) # True that the data is tabular
         
-        # Convert CSV-ready-string to CSV file then zip and return path/filename
-        object_zip_path = zip_tabular_data(tabular_data)
-
-        print("uploading for object query")
-        upload_csv_zip(object_zip_path)
-
-        edc_response = json.loads(alert_edc_of_new_citsci_data("tabular_test_data", _TABULAR_DATA, object_zip_path[2]))
-
-        print("EDC Responses:")
-        print(edc_response)
-
-        if edc_response["status"] == "success":
-            # manifest_url = edc_response["manifest_url"]
-            if len(edc_response["messages"]) > 0:
-                # h.update(edc_response["messages"])
-                print(edc_response["messages"])
-            else:
-                print("finished processing")
-                # h.update(manifest_url)
-        else:
-            print("something bad happened!!")
-            # clean_up_unused_subject_set()
-            # # raise CitizenScienceError(edc_response["messages"])
-            # h.update(edc_response)
-            return
-
-        # send_zooniverse_manifest()
-        # h.update("Transfer process complete, but further processing is required on the Zooniverse platform and you will receive an email at " + email)
+        self.process_edc_response()
         return
-
-    
-    def zip_tabular_data(tabular_data):
-        guid = str(uuid.uuid4())
-        tabular_data_dir = "./project/citizen-science/tabular-data/"
-        data_dir = tabular_data_dir + guid
-        os.mkdir(data_dir);
-        outFileName = data_dir + "/tabular-data-" + str(round(time.time() * 1000)) + ".csv"
-        outFile = open(outFileName, "w")
-        outFile.write(tabular_data)
-        outFile.close()
-        shutil.make_archive(tabular_data_dir + guid, 'zip', data_dir)
-
-        return [tabular_data_dir + guid + '.zip', guid + '.zip', guid]
-    
-    def upload_csv_zip(zip_path):
-        # global before_zip, after_zip
-        # h.update("Uploading the citizen science data, zipping up took : ")
+                                  
+    def upload_tabular_manifest(manifest_path):
+        self.log_step("Uploading tabular data manifest")
         bucket_name = "citizen-science-data"
-        # service_account_key = "skyviewer-398f28c943e8.json" # replace this with the GCP key provided to you
-        destination_blob_name = zip_path[1]
-        source_file_name = zip_path[0]
-
-        print("uploaded zip guid: " + zip_path[2])
 
         storage_client = storage.Client()
         bucket = storage_client.bucket(bucket_name)
-        blob = bucket.blob(destination_blob_name)
+        blob = bucket.blob("manifest.csv")
 
-        blob.upload_from_filename(source_file_name)
+        blob.upload_from_filename("manifest.csv")
         return
-    
-    
 
     # Validates that the RSP user is allowed to create a new subject set
     def send_image_data(self, subject_set_name, batch_dir, cutout_data = None):
@@ -180,11 +130,15 @@ class CitSciPipeline:
         self.create_new_subject_set(subject_set_name)
 
         self.edc_response = self.alert_edc_of_new_citsci_data()
+        
+        self.process_edc_response()
+        return
+            
+    def process_edc_response(self):
         if(self.edc_response == None):
             self.edc_response = { "status": "error", "messages": "An error occurred while processing the data transfer process upload" }
-        else:
+        else:                      
             self.edc_response = json.loads(self.edc_response)
-
         if self.edc_response["status"] == "success":
             self.manifest_url = self.edc_response["manifest_url"]
             if len(self.edc_response["messages"]) > 0:
@@ -228,12 +182,14 @@ class CitSciPipeline:
         blob.upload_from_filename(source_file_name)
         return
 
-    def alert_edc_of_new_citsci_data(self):
+    def alert_edc_of_new_citsci_data(self, tabular = False):
         project_id_str = str(self.project_id)
         self.log_step("Notifying the Rubin EPO Data Center of the new data, which will finish processing of the data and notify Zooniverse")
 
         try:
-            edc_endpoint = "https://rsp-data-exporter-dot-skyviewer.uw.r.appspot.com/citizen-science-bucket-ingest?email=" + self.email + "&vendor_project_id=" + project_id_str + "&guid=" + self.guid + "&vendor_batch_id=" + str(self.vendor_batch_id) + "&debug=True"
+            min = a if a < b else b
+            resource = "citizen-science-image-ingest" if tabular == False else "citizen-science-tabular-ingest"
+            edc_endpoint = "https://rsp-data-exporter-dot-skyviewer.uw.r.appspot.com/" + resource + "?email=" + self.email + "&vendor_project_id=" + project_id_str + "&guid=" + self.guid + "&vendor_batch_id=" + str(self.vendor_batch_id) + "&debug=True"
             response = urllib.request.urlopen(edc_endpoint).read()
             manifestUrl = response.decode('UTF-8')
             return manifestUrl
