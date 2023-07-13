@@ -91,6 +91,83 @@ class CitSciPipeline:
         response = raw_response.decode('UTF-8')
         return json.loads(response)
 
+    
+    
+    
+    
+    
+    
+    def send_tabular_data(subject_set_name, manifest_location):
+        self.step = 0
+        self.log_step("Checking batch status")
+        if has_active_batch() == True:
+            h.update("Active batch exists!!! Continuing because this notebook is in debug mode")
+            raise CitizenScienceError("You cannot send another batch of data while a subject set is still active on the Zooniverse platform - you can only send a new batch of data if all subject sets associated to a project have been completed.")
+        
+        self.create_new_subject_set(subject_set_name)
+        
+        # Convert CSV-ready-string to CSV file then zip and return path/filename
+        object_zip_path = zip_tabular_data(tabular_data)
+
+        print("uploading for object query")
+        upload_csv_zip(object_zip_path)
+
+        edc_response = json.loads(alert_edc_of_new_citsci_data("tabular_test_data", _TABULAR_DATA, object_zip_path[2]))
+
+        print("EDC Responses:")
+        print(edc_response)
+
+        if edc_response["status"] == "success":
+            # manifest_url = edc_response["manifest_url"]
+            if len(edc_response["messages"]) > 0:
+                # h.update(edc_response["messages"])
+                print(edc_response["messages"])
+            else:
+                print("finished processing")
+                # h.update(manifest_url)
+        else:
+            print("something bad happened!!")
+            # clean_up_unused_subject_set()
+            # # raise CitizenScienceError(edc_response["messages"])
+            # h.update(edc_response)
+            return
+
+        # send_zooniverse_manifest()
+        # h.update("Transfer process complete, but further processing is required on the Zooniverse platform and you will receive an email at " + email)
+        return
+
+    
+    def zip_tabular_data(tabular_data):
+        guid = str(uuid.uuid4())
+        tabular_data_dir = "./project/citizen-science/tabular-data/"
+        data_dir = tabular_data_dir + guid
+        os.mkdir(data_dir);
+        outFileName = data_dir + "/tabular-data-" + str(round(time.time() * 1000)) + ".csv"
+        outFile = open(outFileName, "w")
+        outFile.write(tabular_data)
+        outFile.close()
+        shutil.make_archive(tabular_data_dir + guid, 'zip', data_dir)
+
+        return [tabular_data_dir + guid + '.zip', guid + '.zip', guid]
+    
+    def upload_csv_zip(zip_path):
+        # global before_zip, after_zip
+        # h.update("Uploading the citizen science data, zipping up took : ")
+        bucket_name = "citizen-science-data"
+        # service_account_key = "skyviewer-398f28c943e8.json" # replace this with the GCP key provided to you
+        destination_blob_name = zip_path[1]
+        source_file_name = zip_path[0]
+
+        print("uploaded zip guid: " + zip_path[2])
+
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(destination_blob_name)
+
+        blob.upload_from_filename(source_file_name)
+        return
+    
+    
 
     # Validates that the RSP user is allowed to create a new subject set
     def send_image_data(self, subject_set_name, batch_dir, cutout_data = None):
@@ -98,7 +175,7 @@ class CitSciPipeline:
         self.log_step("Checking batch status")
         if self.has_active_batch() == True:
             raise CitizenScienceError("You cannot send another batch of data while a subject set is still active on the Zooniverse platform - you can only send a new batch of data if all subject sets associated to a project have been completed.")
-        zip_path = self.zip_hips_cutouts(batch_dir)
+        zip_path = self.zip_image_cutouts(batch_dir)
         self.upload_cutouts(zip_path)
         self.create_new_subject_set(subject_set_name)
 
@@ -132,7 +209,7 @@ class CitSciPipeline:
         self.log_step("Transfer process complete, but further processing is required on the Zooniverse platform and you will receive an email at " + self.email)
         return
     
-    def zip_hips_cutouts(self, batch_dir):
+    def zip_image_cutouts(self, batch_dir):
         self.guid = str(uuid.uuid4())
         self.log_step("Zipping up all the astro cutouts - this can take a few minutes with large data sets, but unlikely more than 10 minutes.")
         shutil.make_archive("./" + self.guid, 'zip', batch_dir)
