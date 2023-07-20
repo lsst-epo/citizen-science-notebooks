@@ -210,11 +210,14 @@ def make_manifest_with_tabular_data(results_table, batch_dir):
     # Loop over results_table, or any other iterable provided by the PI:
     for row in results_table:
 
-        csv_row = { "sourceId": str(uuid.uuid4()) }
+        # csv_row = { "sourceId": str(uuid.uuid4()) }
+        csv_row = {}
 
         for col in col_names:
-
-            csv_row[col] = row[col]
+            if col == "objectId":
+                csv_row["sourceId"] = row[col]
+            else:
+                csv_row[col] = row[col]
 
         manifest_dict.append(csv_row)
 

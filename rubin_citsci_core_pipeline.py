@@ -91,32 +91,33 @@ class CitSciPipeline:
         response = raw_response.decode('UTF-8')
         return json.loads(response)
     
-    def send_tabular_data(subject_set_name, manifest_location):
+    def send_tabular_data(self, subject_set_name, manifest_location):
         self.step = 0
         self.log_step("Checking batch status")
-        if has_active_batch() == True:
-            h.update("Active batch exists!!! Continuing because this notebook is in debug mode")
+        if self.has_active_batch() == True:
+            self.log_step("Active batch exists!!! Continuing because this notebook is in debug mode")
             raise CitizenScienceError("You cannot send another batch of data while a subject set is still active on the Zooniverse platform - you can only send a new batch of data if all subject sets associated to a project have been completed.")
         
         self.log_step("Creating new subject set")
         self.create_new_subject_set(subject_set_name)
 
-        upload_tabular_manifest(manifest_location)
+        self.upload_tabular_manifest(manifest_location)
 
         self.edc_response = self.alert_edc_of_new_citsci_data(True) # True that the data is tabular
         
         self.process_edc_response()
         return
-                                  
-    def upload_tabular_manifest(manifest_path):
+           
+    def upload_tabular_manifest(self, manifest_path):
+        self.guid = str(uuid.uuid4())
         self.log_step("Uploading tabular data manifest")
         bucket_name = "citizen-science-data"
 
         storage_client = storage.Client()
         bucket = storage_client.bucket(bucket_name)
-        blob = bucket.blob("manifest.csv")
+        blob = bucket.blob(self.guid + "/manifest.csv")
 
-        blob.upload_from_filename("manifest.csv")
+        blob.upload_from_filename(manifest_path)
         return
 
     # Validates that the RSP user is allowed to create a new subject set
@@ -187,10 +188,11 @@ class CitSciPipeline:
         self.log_step("Notifying the Rubin EPO Data Center of the new data, which will finish processing of the data and notify Zooniverse")
 
         try:
-            min = a if a < b else b
             resource = "citizen-science-image-ingest" if tabular == False else "citizen-science-tabular-ingest"
             edc_endpoint = "https://rsp-data-exporter-dot-skyviewer.uw.r.appspot.com/" + resource + "?email=" + self.email + "&vendor_project_id=" + project_id_str + "&guid=" + self.guid + "&vendor_batch_id=" + str(self.vendor_batch_id) + "&debug=True"
+            # print(edc_endpoint)
             response = urllib.request.urlopen(edc_endpoint).read()
+            str(response)
             manifestUrl = response.decode('UTF-8')
             return manifestUrl
         except Exception as e:
