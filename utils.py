@@ -2,7 +2,7 @@
 from astropy.units import UnitsWarning
 import matplotlib.pyplot as plt
 import gc
-import os
+import os, uuid, itertools
 import pandas
 import warnings
 
@@ -164,7 +164,7 @@ def prep_table(results, skymap):
     )
     return results_table
 
-def make_manifest_and_images(results_table, butler, batch_dir):
+def make_manifest_with_images(results_table, butler, batch_dir):
     # In-memory manifest file as an array of dicts
     manifest = []
 
@@ -195,3 +195,30 @@ def make_manifest_and_images(results_table, butler, batch_dir):
         remove_figure(figout)
     
     return manifest
+
+def make_manifest_with_tabular_data(results_table, batch_dir):
+    # In-memory manifest file as an array of dicts
+    manifest_dict = []
+
+    # Create directory if it does not already exist
+    if os.path.isdir(batch_dir) == False:
+        os.mkdir(batch_dir)
+
+    # Get field names
+    col_names = list(results_table.fieldnames)
+
+    # Loop over results_table, or any other iterable provided by the PI:
+    for row in results_table:
+
+        # csv_row = { "sourceId": str(uuid.uuid4()) }
+        csv_row = {}
+
+        for col in col_names:
+            if col == "objectId":
+                csv_row["sourceId"] = row[col]
+            else:
+                csv_row[col] = row[col]
+
+        manifest_dict.append(csv_row)
+
+    return manifest_dict
