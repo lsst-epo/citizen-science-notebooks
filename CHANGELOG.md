@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 0.4.0 - 2023-7-26
+### Changed
+- Added installation of new rubin citsci pypi package
+
+### Removed
+- `rubin_citsci_core_pipeline.py` as it is bundled in the rubin citsci pypi package now
+- `Citizen_Science_Install.ipynb` as it was installing dependencies now handled by the rubin citsci pypi package
+
 ## 0.3.0 - 2023-7-11
 ### Changed
 - Pedagogy text updates by bnevin
