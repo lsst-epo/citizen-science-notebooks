@@ -6,6 +6,7 @@ import csv, uuid, os, shutil, json, logging, urllib.request
 from datetime import datetime, timezone, timedelta
 from IPython.display import display
 from google.cloud import storage
+import pandas as pd
 import panoptes_client
 from panoptes_client import Project, SubjectSet, Classification
 
@@ -220,11 +221,30 @@ class CitSciPipeline:
             except:
                 display("    ** Warning! - The Zooniverse client is throwing an error about a missing subject set, this can likely safely be ignored.");
         return active_batch
+    
+    def retrieve_data(self, project_id):
+        panoptes_client.Panoptes.connect(login="interactive")
+        # This project_id is found on Zooniverse by selecting 'build a project' and then selecting the project
+        # You don't need to be the project owner.
+        classification_export = panoptes_client.Project(project_id).get_export(
+            "classifications"
+        )
+        list_rows = []
+        counter = 0
+        # If the following line throws an error, restart the kernel and rerun the cell.
+        for row in classification_export.csv_reader():
+            if counter == 0:
+                header = row
+            else:
+                list_rows.append(row)
+            counter += 1
+        return pd.DataFrame(list_rows, columns=header)
 
     def log_step(self, msg):
         self.step += 1
         display(str(self.step) + ". " + msg)
         return
+    
 
     # Custom error handling for this notebook
     class CitizenScienceError(Exception):
@@ -236,3 +256,5 @@ class CitSciPipeline:
         # __str__ is to print() the value
         def __str__(self):
             return(repr(self.value))
+
+
