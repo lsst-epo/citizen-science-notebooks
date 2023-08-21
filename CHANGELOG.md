@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.5-rc.1
 ### Changed
-- `Citizen_Science_Testing.ipynb` notebook has 
+- `Citizen_Science_Testing.ipynb` notebook has been updated to install the backend code via `pip install`
+- Renamed the `Citizen_Science_TAP_Tutorial.ipynb` notebook to `TAP_Tutorial.ipynb` and moved it to the `experimental_notebooks` subfolder
+- Added the `Citizen_Science_Tabular.ipynb` to the `experimental_notebooks` subfolder
+
 
 ## [Unreleased]
 
