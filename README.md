@@ -7,6 +7,4 @@ The Citizen_Science_Testing.ipynb is most relevant; it guides a PI through the p
 
 The utils.py script contains general plotting, butler, and manifest utilities. If necessary, it can be modified carefully.
 
-The rubin_citsci_core_pipeline.py script contains utilities related to the citizen science pipeline. Do not modify.
-
 Additional notebooks are deprecated.
