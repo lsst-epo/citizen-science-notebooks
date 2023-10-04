@@ -182,7 +182,8 @@ def make_manifest_with_images(results_table, butler, batch_dir):
         # Create the CSV-file-row-as-dict
         csv_row = {
             "filename": filename,  # required column, do not change the column name
-            "sourceId": row.objectId,  # required column, do not change the column name
+            "objectId": row.objectId,  # required column, do not change the column name
+            "objectIdType": "DIRECT",  # required column, do not change the column name
             # Add your desired columns:
             "coord_ra": row.coord_ra,
             "coord_dec": row.coord_dec,
