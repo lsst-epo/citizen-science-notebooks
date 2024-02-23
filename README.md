@@ -5,4 +5,8 @@ These notebooks are intended to be used within the Rubin Science Platform Notebo
 
 First, run the `01_Introduction_to_Citsci_Pipeline.ipynb` notebook; it guides a PI through the process of sending data from the Rubin Science Platform (RSP) to the Zooniverse and retrieving classifications from Zooniverse.
 
+`02_Send_Flipbook_Variable_Stars_Imaging.ipynb` demonstrates how to send a flipbook of images to Zooniverse for an example variable star.
+
 The `utils.py` script contains general plotting, butler, and manifest utilities. If necessary, it can be modified carefully.
+
+Additional notebooks are deprecated.
