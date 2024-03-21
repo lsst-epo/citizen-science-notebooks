@@ -75,7 +75,6 @@ def get_cutout_image(butler, ra_deg, dec_deg, visit, detector, band, cutoutSideL
 def make_calexp_fig(cutout_image, ra, dec, out_name):
     """
     Create an image.
-    should be followed with remove_figure
     
     Parameters
     ----------
@@ -102,26 +101,6 @@ def make_calexp_fig(cutout_image, ra, dec, out_name):
     plt.savefig(out_name)
     
     return fig
-
-
-def remove_figure(fig):
-    """
-    Remove a figure to reduce memory footprint.
-    Parameters
-    ----------
-    fig: matplotlib.figure.Figure
-        Figure to be removed.
-    Returns
-    -------
-    None
-    """
-    # get the axes and clear their images
-    for ax in fig.get_axes():
-        for im in ax.get_images():
-            im.remove()
-    fig.clf()  # clear the figure
-    plt.close(fig)  # close the figure
-    gc.collect()    # call the garbage collector
     
 def get_flux(flux_table):
     """
@@ -178,7 +157,6 @@ def plotlc(bands, days, magnitudes, out_name):
 def make_figure(exp, out_name):
     """
     Create an image.
-    should be followed with remove_figure
     Parameters
     ----------
     exp : calexp from butler.get
@@ -251,7 +229,7 @@ def setup_plotting():
     afwdisplay.setDefaultBackend("matplotlib")
 
 
-def setup_butler(config, collection):
+def setup_query_tools(config, collection):
     service = get_tap_service()
     assert service is not None
     assert service.baseurl == "https://data.lsst.cloud/api/tap"
@@ -260,7 +238,7 @@ def setup_butler(config, collection):
     return service, butler, skymap
 
 
-def run_butler_query(service, number_sources, use_center_coords, use_radius):
+def run_tap_query(service, number_sources, use_center_coords, use_radius):
     query = (
         "SELECT TOP "
         + str(number_sources)
@@ -321,7 +299,7 @@ def make_manifest_with_images(results_table, butler, batch_dir):
             "r_inputCount": row.r_inputCount,
         }
         manifest.append(csv_row)
-        remove_figure(figout)
+        del figout
     
     return manifest
 
@@ -406,7 +384,6 @@ def cutout_calexp(butler,
 def make_calexp_fig(cutout_image, out_name):
     """
     Create a figure of a calexp image
-    should be followed with remove_figure
 
     Parameters
     ----------
@@ -435,26 +412,6 @@ def make_calexp_fig(cutout_image, out_name):
     plt.savefig(out_name)
     print('shape of image', np.shape(cutout_image.image.array))
     return fig
-
-def remove_figure(fig):
-    """
-    Remove a figure to reduce memory footprint.
-
-    Parameters
-    ----------
-    fig: matplotlib.figure.Figure
-        Figure to be removed.
-
-    Returns
-    -------
-    None
-    """
-    for ax in fig.get_axes():
-        for im in ax.get_images():
-            im.remove()
-    fig.clf()
-    plt.close(fig)
-    gc.collect()
 
 '''
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -513,7 +470,7 @@ def set_wcs_ticks_labels(ax, wcs):
 def make_calexp_fig_WCS(cutout_image, out_name):
     """
     Create a figure of a calexp image
-    should be followed with remove_figure
+    
     Includes the experimental WCS axes
 
     Parameters
