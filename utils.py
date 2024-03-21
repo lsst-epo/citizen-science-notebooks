@@ -70,36 +70,6 @@ def get_cutout_image(butler, ra_deg, dec_deg, visit, detector, band, cutoutSideL
     cutout_image = butler.get('calexp', parameters=parameters, **dataId)
 
     return cutout_image
-
-def make_calexp_fig(cutout_image, ra, dec, out_name):
-    """
-    Create an image.
-    
-    Parameters
-    ----------
-    cutout_image : cutout_image from butler.get
-    ra : ra of source in degrees
-    dec : dec of source in degrees
-    out_name : file name where you'd like to save it
-    
-    Returns
-    ----------
-    cutout image
-    """
-    fig = plt.figure(figsize=(4, 4))
-    afw_display = afwDisplay.Display(frame=fig)
-    afw_display.scale('asinh', 'zscale')
-    afw_display.mtv(cutout_image.image)
-    
-    cutout_wcs = cutout_image.getWcs()
-    radec = geom.SpherePoint(ra, dec, geom.degrees)
-    xy = geom.PointI(cutout_wcs.skyToPixel(radec))
-    
-    afw_display.dot('x', xy.getX(), xy.getY(), size=1, ctype='orange')
-    plt.gca().axis('off')
-    plt.savefig(out_name)
-    
-    return fig
     
 def get_flux(flux_table):
     """
@@ -410,7 +380,6 @@ def make_calexp_fig(cutout_image, out_name):
     plt.colorbar(im, location='right', anchor=(0, 0.1))
     plt.axis('off')
     plt.savefig(out_name)
-    print('shape of image', np.shape(cutout_image.image.array))
     return fig
 
 '''
