@@ -352,3 +352,216 @@ def make_manifest_with_tabular_data(results_table, batch_dir):
         manifest_dict.append(csv_row)
 
     return manifest_dict
+
+# The following function is from Rubin tutorial 03a:
+def cutout_calexp(butler,
+                  ra,
+                  dec,
+                  visit,
+                  detector,
+                  cutoutsidelength=51,
+                  **kwargs):
+    """
+    Produce a cutout from a calexp at the given ra, dec position.
+
+    Adapted from cutout_coadd which was adapted from a DC2 tutorial
+    notebook by Michael Wood-Vasey.
+
+    Parameters
+    ----------
+    butler: lsst.daf.persistence.Butler
+        Helper object providing access to a data repository
+    ra: float
+        Right ascension of the center of the cutout, in degrees
+    dec: float
+        Declination of the center of the cutout, in degrees
+    visit: int
+        Visit id of the calexp's visit
+    detector: int
+        Detector for the calexp
+    cutoutsidelength: float [optional]
+        Size of the cutout region in pixels.
+
+    Returns
+    -------
+    MaskedImage: cutout image
+    """
+    dataid = {'visit': visit, 'detector': detector}
+    print('ra', ra, 'dec', dec)
+    radec = geom.SpherePoint(ra,
+                             dec,
+                             geom.degrees)
+    cutoutsize = geom.ExtentI(cutoutsidelength,
+                              cutoutsidelength)
+    calexp_wcs = butler.get('calexp.wcs',
+                            **dataid)
+    xy = geom.PointI(calexp_wcs.skyToPixel(radec))
+    bbox = geom.BoxI(xy - cutoutsize // 2,
+                     cutoutsize)
+    parameters = {'bbox': bbox}
+    cutout_image = butler.get('calexp',
+                              parameters=parameters,
+                              **dataid)
+    return cutout_image
+
+def make_calexp_fig(cutout_image, out_name):
+    """
+    Create a figure of a calexp image
+    should be followed with remove_figure
+
+    Parameters
+    ----------
+    cutout_image : cutout_image from butler.get
+    out_name : file name where you'd like to save it
+
+    Returns
+    ----------
+    cutout figure
+    """
+
+    fig = plt.figure()
+    ax = plt.subplot()
+    calexp_extent = (cutout_image.getBBox().beginX,
+                     cutout_image.getBBox().endX,
+                     cutout_image.getBBox().beginY,
+                     cutout_image.getBBox().endY)
+    im = ax.imshow(abs(cutout_image.image.array),
+                   cmap='gray',
+                   extent=calexp_extent,
+                   origin='lower',
+                   norm=matplotlib.colors.LogNorm(vmin=1e1, vmax=1e5)
+                   )
+    plt.colorbar(im, location='right', anchor=(0, 0.1))
+    plt.axis('off')
+    plt.savefig(out_name)
+    print('shape of image', np.shape(cutout_image.image.array))
+    return fig
+
+def remove_figure(fig):
+    """
+    Remove a figure to reduce memory footprint.
+
+    Parameters
+    ----------
+    fig: matplotlib.figure.Figure
+        Figure to be removed.
+
+    Returns
+    -------
+    None
+    """
+    for ax in fig.get_axes():
+        for im in ax.get_images():
+            im.remove()
+    fig.clf()
+    plt.close(fig)
+    gc.collect()
+
+'''
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+All that follows is the experimental WCS version
+of the above functions.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'''
+
+def update_wcs_center(wcs, new_center_sky):
+    """
+    Update the CRVAL values in the FITS header
+
+    Parameters
+    ----------
+    wcs: world coordinate system from calexp image from lsst.butler
+    new_center_sky: new coordinate center
+
+    Returns
+    -------
+    updated WCS
+    """
+    header = wcs.getFitsMetadata()
+    header['CRVAL1'] = new_center_sky.getLongitude().asDegrees()
+    header['CRVAL2'] = new_center_sky.getLatitude().asDegrees()
+    new_wcs = WCS(header)
+    return new_wcs
+
+
+def set_wcs_ticks_labels(ax, wcs):
+    """
+    Explicitly set tick positions and labels for the WCS axes
+    d. is degrees and .dd is the number of decimal points to display
+
+    Parameters
+    ----------
+    ax: axes object
+    wcs: world coordinate system from calexp image from lsst.butler
+
+    Returns
+    -------
+    updated axes labels and tick positions
+    """
+    ax.coords[0].set_major_formatter('d.ddd')
+    # positions on bottom left
+    ax.coords[0].set_ticks_position('bl')
+    ax.coords[0].set_axislabel('Right Ascension')
+
+    ax.coords[1].set_major_formatter('d.ddd')
+    ax.coords[1].set_ticks_position('bl')
+    ax.coords[1].set_axislabel('Declination')
+
+    # Set the maximum number of ticks for both axes
+    ax.coords[0].set_ticks(spacing=2*u.arcsec)
+    ax.coords[1].set_ticks(spacing=2*u.arcsec)
+
+def make_calexp_fig_WCS(cutout_image, out_name):
+    """
+    Create a figure of a calexp image
+    should be followed with remove_figure
+    Includes the experimental WCS axes
+
+    Parameters
+    ----------
+    cutout_image : cutout_image from butler.get
+    out_name : file name where you'd like to save it
+
+    Returns
+    ----------
+    cutout figure
+    """
+    print('Warning: This function is the experimental version of make_calexp_fig, to use the non-WCS version with the axes off, use make_calexp_fig')
+    # Extract the WCS from the cutout image
+    wcs = cutout_image.getWcs()
+    
+    # Get the CRVAL values from the WCS metadata
+    crval1 = wcs.getFitsMetadata()['CRVAL1']
+    crval2 = wcs.getFitsMetadata()['CRVAL2']
+    # Create a new SpherePoint for the center of the image
+    center_sky = geom.SpherePoint(crval1,
+                                  crval2,
+                                  geom.degrees)
+    # Modify the center (for example, shift by 1 degree)
+    new_center_sky = geom.SpherePoint(center_sky.getLongitude(),
+                                      #+ 1.0*geom.degrees,
+                                      center_sky.getLatitude())
+                                      #+ 1.0*geom.degrees)
+    # Update the WCS with the new center
+    new_wcs = update_wcs_center(wcs,
+                                new_center_sky)
+    
+
+    fig = plt.figure()
+    ax = plt.subplot(projection=new_wcs)
+    calexp_extent = (cutout_image.getBBox().beginX,
+                     cutout_image.getBBox().endX,
+                     cutout_image.getBBox().beginY,
+                     cutout_image.getBBox().endY)
+    im = ax.imshow(abs(cutout_image.image.array),
+                   cmap='gray',
+                   extent=calexp_extent,
+                   origin='lower',
+                   norm=matplotlib.colors.LogNorm(vmin=1e1, vmax=1e5)
+                   )
+    plt.colorbar(im, location='right', anchor=(0, 0.1))
+    set_wcs_ticks_labels(ax, new_wcs)
+    #plt.axis('off')
+    plt.savefig(out_name)
+    print('shape of image', np.shape(cutout_image.image.array))
+    return fig
