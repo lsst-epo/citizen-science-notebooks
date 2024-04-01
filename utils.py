@@ -1,10 +1,8 @@
 # import packages used for generating subject set
 from astropy.units import UnitsWarning
 import matplotlib.pyplot as plt
-import gc
-import os, uuid, itertools
+import os, uuid, itertools, time, concurrent.futures, gc, logging
 import pandas
-import warnings
 
 # Import the Rubin TAP service utilities
 from lsst.rsp import get_tap_service
@@ -56,7 +54,8 @@ def make_figure(exp, out_name):
     fig = plt.figure(figsize=(10, 8))
     afw_display = afwdisplay.Display(1)
     afw_display.scale("asinh", "zscale")
-    afw_display.mtv(exp.image)
+    # afw_display.mtv(exp.image)
+    afw_display.mtv(exp)
     plt.gca().axis("on")
     plt.savefig(out_name)
 
@@ -119,17 +118,31 @@ def setup_plotting():
     afwdisplay.setDefaultBackend("matplotlib")
 
 
-def setup_butler(config, collection):
+def setup_butler(config, collection, **options):
     service = get_tap_service()
     assert service is not None
     assert service.baseurl == "https://data.lsst.cloud/api/tap"
 
     # config = 'dp02'
     # collection = '2.2i/runs/DP0.2'
-    butler = dafbutler.Butler(config, collections=collection)
-    skymap = butler.get("skyMap")
+    if options["with_concurrency"] == True:
+        butler1 = dafbutler.Butler(config, collections=collection)
+        skymap = butler1.get("skyMap")
 
-    return service, butler, skymap
+        butler2 = dafbutler.Butler(config, collections=collection)
+        skymap = butler2.get("skyMap")
+
+        butler3 = dafbutler.Butler(config, collections=collection)
+        skymap = butler3.get("skyMap")
+
+        butler4 = dafbutler.Butler(config, collections=collection)
+        skymap = butler4.get("skyMap")
+        return service, [butler1, butler2, butler3, butler4], skymap
+    else:
+        butler = dafbutler.Butler(config, collections=collection)
+        skymap = butler.get("skyMap")
+    
+        return service, butler, skymap
 
 
 def run_butler_query(service, number_sources, use_center_coords, use_radius):
@@ -164,7 +177,69 @@ def prep_table(results, skymap):
     )
     return results_table
 
-def make_manifest_with_images(results_table, butler, batch_dir):
+def split_results_for_concurrency(results_table):
+    chunk_len = int(len(results_table)/4)
+    splitter = 0
+    arr = []
+    for i in range(3):
+        arr.append(results_table[splitter:(chunk_len + splitter)])
+        splitter += chunk_len
+    arr.append(results_table[splitter:])
+    return arr
+
+def create_images_and_manifest(results_table, butler, batch_dir):
+    if len(results_table) > 1:
+        # Ignore the pesky connection pool warning from `urllib3` that the Butler uses behind the scenes
+        for name in logging.Logger.manager.loggerDict.keys():
+            if 'urllib3' in name:
+                logging.getLogger(name).setLevel(logging.CRITICAL)
+        manifest = []
+        sub_cutouts_arr = split_results_for_concurrency(results_table)
+        
+        # erosas beginning of debug
+        start_time = time.time()
+        # end of debug
+
+        # patch_http_connection_pool(maxsize=20)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            results_generator = executor.map(make_manifest_with_images, sub_cutouts_arr, butler, [batch_dir, batch_dir, batch_dir, batch_dir], [True,True,True,True])
+            for manifest_row in results_generator:
+                manifest += manifest_row
+                
+        # erosas beginning of debug   
+        end_time = time.time()
+        print(f"Total time: {str(end_time - start_time)}")
+        # print(f"Butler query time: {str(running_time)}")
+        # end of debug
+
+        # Return the log level back to warning
+        for name in logging.Logger.manager.loggerDict.keys():
+            if 'urllib3' in name:
+                logging.getLogger(name).setLevel(logging.WARNING)
+        return manifest
+    else:
+        return make_manifest_with_images(results_table, butler, batch_dir)
+
+def patch_http_connection_pool(**constructor_kwargs):
+    """
+    This allows to override the default parameters of the 
+    HTTPConnectionPool constructor.
+    For example, to increase the poolsize to fix problems 
+    with "HttpConnectionPool is full, discarding connection"
+    call this function with maxsize=16 (or whatever size 
+    you want to give to the connection pool)
+    """
+    from urllib3 import connectionpool, poolmanager
+
+    class MyHTTPConnectionPool(connectionpool.HTTPConnectionPool):
+        def __init__(self, *args,**kwargs):
+            kwargs.update(constructor_kwargs)
+            super(MyHTTPConnectionPool, self).__init__(*args,**kwargs)
+    poolmanager.pool_classes_by_scheme['http'] = MyHTTPConnectionPool
+    
+def make_manifest_with_images(results_table, butler, batch_dir, concurrent=False):
+    print("Running concurrent split on results_table!")
     # In-memory manifest file as an array of dicts
     manifest = []
 
@@ -172,10 +247,19 @@ def make_manifest_with_images(results_table, butler, batch_dir):
     if os.path.isdir(batch_dir) == False:
         os.mkdir(batch_dir)
 
-    # Loop over results_table, or any other iterable provided by the PI:
+    # erosas beginning of debug
+    start_time = time.time()
+    running_time = 0
+    # end of debug
+    
     for index, row in results_table.iterrows():
-        # Use the Butler to get data for each index, row
-        deepCoadd = butler.get("deepCoadd", dataId=row["dataId"])
+        # before_butler_query = time.time() # debug
+
+        deepCoadd = butler.get("deepCoadd.image", dataId=row["dataId"])
+
+        # after_butler_query = time.time() # debug
+        # running_time += (after_butler_query - before_butler_query) # debug
+        
         filename = "cutout" + str(row["objectId"]) + ".png"
         figout = make_figure(deepCoadd, batch_dir + filename)
 
@@ -193,7 +277,12 @@ def make_manifest_with_images(results_table, butler, batch_dir):
             "r_inputCount": row.r_inputCount,
         }
         manifest.append(csv_row)
-        remove_figure(figout)
+        del figout
+
+    # end_time = time.time()
+
+    # print(f"Total time: {str(end_time - start_time)}")
+    # print(f"Butler query time: {str(running_time)}")
     
     return manifest
 
