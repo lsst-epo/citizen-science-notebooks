@@ -275,8 +275,19 @@ def prep_table(results, skymap):
 def make_manifest_with_calexp_images(
     sorted_sources, diaobjectid, idx_select, butler, batch_dir
 ):
+    """
+    Make the manifest array using the flipbook calexp images
+    Parameters
+    ----------
+    sorted_sources : data table
+    diaobjectid : self explanatory
+    idx_select : ids in table from which the images will be created
+    butler: self explanatory
+    batch_dir: where the manifest will be saved
+    """
     figout_data = {"diaObjectId": diaobjectid}
     cutouts = []
+    # for each moment in time, create the calexp image
     for i, idx in enumerate(idx_select):
         star_ra = sorted_sources["ra"][idx]
         star_dec = sorted_sources["decl"][idx]
@@ -287,14 +298,18 @@ def make_manifest_with_calexp_images(
         calexp_image = cutout_calexp(
             butler, star_ra, star_dec, star_visitid, star_detector, 50
         )
+        # save the calexp image
         figout = make_calexp_fig(
             calexp_image,
             batch_dir + str(star_id) + "_" + str(star_ccdid) + ".png"
         )
         del figout
+        # add columns for each image
+        # of the png location
         figout_data["location:image_" + str(i)] = (
             str(star_id) + "_" + str(star_ccdid) + ".png"
         )
+        # and of the diaObjectId
         figout_data["diaObjectId:image_" + str(i)] = str(star_id)
         figout_data["filename"] = str(star_id) + "_" + str(star_ccdid) + ".png"
     cutouts.append(figout_data)
