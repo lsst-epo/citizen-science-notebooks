@@ -30,9 +30,12 @@ plt.style.use("tableau-colorblind10")
 pd.set_option("display.max_rows", 20)
 warnings.simplefilter("ignore", category=UnitsWarning)
 
-plot_filter_labels = {"u": "u", "g": "g",
-                      "r": "r", "i": "i",
-                      "z": "z", "y": "y"}
+plot_filter_labels = {"u": "u",
+                      "g": "g",
+                      "r": "r",
+                      "i": "i",
+                      "z": "z",
+                      "y": "y"}
 plot_filter_colors = {
     "u": "#56b4e9",
     "g": "#008060",
@@ -41,9 +44,12 @@ plot_filter_colors = {
     "z": "#6600cc",
     "y": "#000000",
 }
-plot_filter_symbols = {"u": "o", "g": "^",
-                       "r": "v", "i": "s",
-                       "z": "*", "y": "p"}
+plot_filter_symbols = {"u": "o",
+                       "g": "^",
+                       "r": "v",
+                       "i": "s",
+                       "z": "*",
+                       "y": "p"}
 
 
 def get_cutout_image(
@@ -108,8 +114,8 @@ def get_flux(flux_table):
     mjd_days = {}
     mags = {}
     for filter in plot_filter_labels:
-        mjd_days[filter] = (np.array(flux_table[pick[filter]]["expMidptMJD"])
-                            * u.day)
+        mjd_days[filter] = np.array(flux_table[pick[filter]]["expMidptMJD"]) \
+            * u.day
         mags[filter] = np.array(flux_table[pick[filter]]["psfMag"])
 
     return mjd_days, mags
@@ -176,9 +182,8 @@ def get_bandtractpatch(ra_deg, dec_deg, skymap):
     dec : dec of source in degrees
 
     """
-    spherepoint = geom.SpherePoint(
-        ra_deg * geom.degrees, dec_deg * geom.degrees
-    )
+    spherepoint = geom.SpherePoint(ra_deg * geom.degrees,
+                                   dec_deg * geom.degrees)
     tract = skymap.findTract(spherepoint)
     patch = tract.findPatch(spherepoint)
     my_tract = tract.tract_id
@@ -261,12 +266,42 @@ def prep_table(results, skymap):
     results_table["dataId"] = results_table.apply(
         lambda x: get_bandtractpatch(x["coord_ra"],
                                      x["coord_dec"],
-                                     skymap), axis=1
+                                     skymap),
+        axis=1
     )
     return results_table
 
 
-def make_manifest_with_images(results_table, butler, batch_dir):
+def make_manifest_with_calexp_images(
+    sorted_sources, diaobjectid, idx_select, butler, batch_dir
+):
+    figout_data = {"diaObjectId": diaobjectid}
+    cutouts = []
+    for i, idx in enumerate(idx_select):
+        star_ra = sorted_sources["ra"][idx]
+        star_dec = sorted_sources["decl"][idx]
+        star_visitid = sorted_sources["visitId"][idx]
+        star_detector = sorted_sources["detector"][idx]
+        star_id = sorted_sources["diaObjectId"][idx]
+        star_ccdid = sorted_sources["ccdVisitId"][idx]
+        calexp_image = cutout_calexp(
+            butler, star_ra, star_dec, star_visitid, star_detector, 50
+        )
+        figout = make_calexp_fig(
+            calexp_image,
+            batch_dir + str(star_id) + "_" + str(star_ccdid) + ".png"
+        )
+        del figout
+        figout_data["location:image_" + str(i)] = (
+            str(star_id) + "_" + str(star_ccdid) + ".png"
+        )
+        figout_data["diaObjectId:image_" + str(i)] = str(star_id)
+        figout_data["filename"] = str(star_id) + "_" + str(star_ccdid) + ".png"
+    cutouts.append(figout_data)
+    return cutouts
+
+
+def make_manifest_with_deepcoadd_images(results_table, butler, batch_dir):
     # In-memory manifest file as an array of dicts
     manifest = []
 
