@@ -22,21 +22,18 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Quick github.head_ref test
-        run: echo github.head_ref
+        run: echo $(github.head_ref)
 
-      - name: Flake8 Jupyter Notebook
+      - name: Validate notebooks
         uses: mhitza/flake8-jupyter-notebook@v1.1
             
 
-      # - name: Run Flake8 validation
-      #   uses: ricardochaves/python-lint@v1.4.0
-      #   with:
-      #     use-flake8: true
-      #     use-black: false
-      #     use-mypy: false
-      #     use-isort: false
-      #     use-pylint: false
-      #     use-pycodestyle: false
-
-      # - name: Validation notebooks
-      #   run: flake8 *.ipynb
+      - name: Validate utils.py
+        uses: ricardochaves/python-lint@v1.4.0
+        with:
+          use-flake8: true
+          use-black: false
+          use-mypy: false
+          use-isort: false
+          use-pylint: false
+          use-pycodestyle: false
