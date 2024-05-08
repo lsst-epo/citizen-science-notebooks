@@ -1,7 +1,9 @@
 # import packages used for generating subject set
 from astropy.units import UnitsWarning
 import matplotlib.pyplot as plt
-import gc, os, warnings
+import gc
+import os
+import warnings
 import pandas
 
 # Import the Rubin TAP service utilities
@@ -162,10 +164,10 @@ def prep_table(results, skymap):
     )
     return results_table
 
+
 def make_manifest_with_images(results_table, butler, batch_dir):
     # In-memory manifest file as an array of dicts
     manifest = []
-
 
     # Create directory if it does not already exist
     if os.path.isdir(batch_dir) is False:
