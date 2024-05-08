@@ -30,4 +30,6 @@ jobs:
           use-isort: false
           use-pylint: false
           use-pycodestyle: false
+
+      - name: Validation notebooks
         run: flake8 *.ipynb
