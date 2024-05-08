@@ -1,10 +1,8 @@
 # import packages used for generating subject set
 from astropy.units import UnitsWarning
 import matplotlib.pyplot as plt
-import gc
-import os, uuid, itertools
+import gc, os, warnings
 import pandas
-import warnings
 
 # Import the Rubin TAP service utilities
 from lsst.rsp import get_tap_service
@@ -168,8 +166,9 @@ def make_manifest_with_images(results_table, butler, batch_dir):
     # In-memory manifest file as an array of dicts
     manifest = []
 
+
     # Create directory if it does not already exist
-    if os.path.isdir(batch_dir) == False:
+    if os.path.isdir(batch_dir) is False:
         os.mkdir(batch_dir)
 
     # Loop over results_table, or any other iterable provided by the PI:
@@ -194,15 +193,16 @@ def make_manifest_with_images(results_table, butler, batch_dir):
         }
         manifest.append(csv_row)
         remove_figure(figout)
-    
+
     return manifest
+
 
 def make_manifest_with_tabular_data(results_table, batch_dir):
     # In-memory manifest file as an array of dicts
     manifest_dict = []
 
     # Create directory if it does not already exist
-    if os.path.isdir(batch_dir) == False:
+    if os.path.isdir(batch_dir) is False:
         os.mkdir(batch_dir)
 
     # Get field names
