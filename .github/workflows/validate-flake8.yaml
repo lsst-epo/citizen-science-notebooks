@@ -23,11 +23,12 @@ jobs:
 
       - name: Create config file
         run: |
+          touch .config/flake8
           echo "[flake8]" >> .config/flake8
           echo "max-line-length = 99" >> .config/flake8
           echo "ignore = E133, E226, E228, E266, N802, N803, N806, N812, N813, N815, N816, W503" >> .config/flake8
           cat .config/flake8
-          
+
       - name: Run Flake8 validation
         uses: ricardochaves/python-lint@v1.4.0
         with:
