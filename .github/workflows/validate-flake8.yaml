@@ -1,4 +1,4 @@
-name: Validate CitSci Notebooks Against Flake8
+name: Validate
 
 on:
   push:
@@ -15,20 +15,17 @@ on:
 
 jobs:
   validate-notebooks:
-    name: Validate notebooks
+    name: Notebooks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Quick github.head_ref test
-        run: echo ${{github.head_ref}}
-
       - name: Validate notebooks
         uses: mhitza/flake8-jupyter-notebook@v1.1
             
   validate-py-scripts:
-    name: Validate py scripts
+    name: Py Scripts
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
