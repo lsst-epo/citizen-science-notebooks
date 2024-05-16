@@ -5,7 +5,6 @@ import gc
 import os
 import warnings
 import pandas
-import torch
 
 # Import the Rubin TAP service utilities
 from lsst.rsp import get_tap_service
