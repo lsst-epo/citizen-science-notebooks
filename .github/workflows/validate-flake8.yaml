@@ -6,7 +6,7 @@ on:
        - 'main'
   pull_request:
     paths-ignore:
-      - 'experiental_notebooks/**'
+      - 'experimental_notebooks/**'
     types:
       - 'opened'
       - 'synchronize'
