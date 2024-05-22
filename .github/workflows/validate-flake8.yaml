@@ -13,13 +13,21 @@ on:
     branches:
       - 'main'
 
+#jobs:
+#  flake8:
+#    runs-on: ubuntu-latest
+
+#    steps:
+#    - uses: actions/checkout@v4
+#    - uses: mhitza/flake8-jupyter-notebook@v1
+
 jobs:
   validate-notebooks:
     name: Notebooks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # changed from v3 to v4
 
       - name: Validate notebooks
         uses: mhitza/flake8-jupyter-notebook@v1.2
