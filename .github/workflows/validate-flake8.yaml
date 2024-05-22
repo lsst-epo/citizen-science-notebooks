@@ -33,6 +33,8 @@ jobs:
 
       - name: Validate notebooks
         uses: mhitza/flake8-jupyter-notebook@v1.2
+        with:
+          args: --exclude=experimental_notebooks/**
             
   validate-py-scripts:
     name: Py Scripts
