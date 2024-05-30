@@ -418,7 +418,6 @@ def cutout_calexp(butler,
     MaskedImage: cutout image
     """
     dataid = {"visit": visit, "detector": detector}
-    print("ra", ra, "dec", dec)
     radec = geom.SpherePoint(ra, dec, geom.degrees)
     cutoutsize = geom.ExtentI(cutoutsidelength, cutoutsidelength)
     calexp_wcs = butler.get("calexp.wcs", **dataid)
@@ -461,6 +460,7 @@ def make_calexp_fig(cutout_image, out_name):
     plt.colorbar(im, location="right", anchor=(0, 0.1))
     plt.axis("off")
     plt.savefig(out_name)
+    plt.close(fig)
     return fig
 
 
