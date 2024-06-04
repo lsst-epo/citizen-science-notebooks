@@ -1,0 +1,11 @@
+# This config file adheres to RTN-045 notebook standards and is used during
+# a Github workflow upon PR creation to main/pushes to the PR
+
+[flake8]
+max-line-length = 99
+exclude = 
+    experimental_notebooks/Citizen_Science_HiPS_Tutorial.ipynb
+    experimental_notebooks/Citizen_Science_Butler_Tutorial.ipynb
+    experimental_notebooks/Citizen_Science_Tabular.ipynb
+    experimental_notebooks/TAP_Tutorial.ipynb
+ignore = E133, E226, E228, E266, N802, N803, N806, N812, N813, N815, N816, W503
