@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed the `send_data()` funtion to `send_image_data()` as part of an effort to define single-use-case functions
 
 ## 0.1.0 - 2023-3-02
+### Changed
+- `variable_stars` notebook updated to install the `citsci-notebook-core-pipeline` PyPI package and reference its exported class
+
+## 0.1.0 - 2023-3-02
 ### Added
 - This changelog
 
