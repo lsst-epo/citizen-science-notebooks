@@ -30,12 +30,7 @@ plt.style.use("tableau-colorblind10")
 pd.set_option("display.max_rows", 20)
 warnings.simplefilter("ignore", category=UnitsWarning)
 
-plot_filter_labels = {"u": "u",
-                      "g": "g",
-                      "r": "r",
-                      "i": "i",
-                      "z": "z",
-                      "y": "y"}
+plot_filter_labels = {"u": "u", "g": "g", "r": "r", "i": "i", "z": "z", "y": "y"}
 plot_filter_colors = {
     "u": "#56b4e9",
     "g": "#008060",
@@ -44,12 +39,7 @@ plot_filter_colors = {
     "z": "#6600cc",
     "y": "#000000",
 }
-plot_filter_symbols = {"u": "o",
-                       "g": "^",
-                       "r": "v",
-                       "i": "s",
-                       "z": "*",
-                       "y": "p"}
+plot_filter_symbols = {"u": "o", "g": "^", "r": "v", "i": "s", "z": "*", "y": "p"}
 
 
 def get_cutout_image(
@@ -114,8 +104,7 @@ def get_flux(flux_table):
     mjd_days = {}
     mags = {}
     for filter in plot_filter_labels:
-        mjd_days[filter] = np.array(flux_table[pick[filter]]["expMidptMJD"]) \
-            * u.day
+        mjd_days[filter] = np.array(flux_table[pick[filter]]["expMidptMJD"]) * u.day
         mags[filter] = np.array(flux_table[pick[filter]]["psfMag"])
 
     return mjd_days, mags
@@ -173,6 +162,27 @@ def make_figure(exp, out_name):
     return fig
 
 
+def remove_figure(fig):
+    """
+    Remove a figure to reduce memory footprint.
+    Parameters
+    ----------
+    fig: matplotlib.figure.Figure
+        Figure to be removed.
+    Returns
+    -------
+    None
+    """
+    # get the axes and clear their images
+    for ax in fig.get_axes():
+        for im in ax.get_images():
+            im.remove()
+    fig.clf()  # clear the figure
+    plt.close(fig)  # close the figure
+
+    gc.collect()  # call the garbage collector
+
+
 def get_bandtractpatch(ra_deg, dec_deg, skymap):
     """
     get the tract and patch of a source. currently retrieves i band only.
@@ -182,8 +192,7 @@ def get_bandtractpatch(ra_deg, dec_deg, skymap):
     dec : dec of source in degrees
 
     """
-    spherepoint = geom.SpherePoint(ra_deg * geom.degrees,
-                                   dec_deg * geom.degrees)
+    spherepoint = geom.SpherePoint(ra_deg * geom.degrees, dec_deg * geom.degrees)
     tract = skymap.findTract(spherepoint)
     patch = tract.findPatch(spherepoint)
     my_tract = tract.tract_id
@@ -221,7 +230,7 @@ def setup_plotting():
     plt.rcParams.update(params)
 
     # initializing Tap and Butler
-    pandas.set_option("display.max_rows", 20)
+    pd.set_option("display.max_rows", 20)
     warnings.simplefilter("ignore", category=UnitsWarning)
 
     # Use lsst.afw.display with the matplotlib backend
@@ -264,10 +273,7 @@ def run_tap_query(service, number_sources, use_center_coords, use_radius):
 def prep_table(results, skymap):
     results_table = results.to_table().to_pandas()
     results_table["dataId"] = results_table.apply(
-        lambda x: get_bandtractpatch(x["coord_ra"],
-                                     x["coord_dec"],
-                                     skymap),
-        axis=1
+        lambda x: get_bandtractpatch(x["coord_ra"], x["coord_dec"], skymap), axis=1
     )
     return results_table
 
@@ -300,8 +306,7 @@ def make_manifest_with_calexp_images(
         )
         # save the calexp image
         figout = make_calexp_fig(
-            calexp_image,
-            batch_dir + str(star_id) + "_" + str(star_ccdid) + ".png"
+            calexp_image, batch_dir + str(star_id) + "_" + str(star_ccdid) + ".png"
         )
         del figout
         # add columns for each image
@@ -380,13 +385,7 @@ def make_manifest_with_tabular_data(results_table, batch_dir):
 
 
 # The following function is from Rubin tutorial 03a:
-def cutout_calexp(butler,
-                  ra,
-                  dec,
-                  visit,
-                  detector,
-                  cutoutsidelength=51,
-                  **kwargs):
+def cutout_calexp(butler, ra, dec, visit, detector, cutoutsidelength=51, **kwargs):
     """
     Produce a cutout from a calexp at the given ra, dec position.
 
