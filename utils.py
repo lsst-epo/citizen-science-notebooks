@@ -1,19 +1,16 @@
 # import packages used for generating subject set
 from astropy.units import UnitsWarning
+import matplotlib
 import matplotlib.pyplot as plt
 import gc
 import os
 import warnings
 import pandas as pd
-import time
-import os
 import numpy as np
 
 # Astropy imports
 from astropy.wcs import WCS
-from astropy.visualization import make_lupton_rgb
 from astropy import units as u
-from astropy.coordinates import SkyCoord
 
 # Import the Rubin TAP service utilities
 from lsst.rsp import get_tap_service
@@ -23,24 +20,44 @@ import lsst.afw.display as afwdisplay
 
 # The Butler provides programmatic access to LSST data products.
 import lsst.daf.butler as dafbutler
-import lsst.geom
+import lsst.geom as geom
 
 # Must explicitly set this to save figures
 afwdisplay.setDefaultBackend("matplotlib")
 
 plt.style.use("tableau-colorblind10")
 
-pd.set_option('display.max_rows', 20)
+pd.set_option("display.max_rows", 20)
 warnings.simplefilter("ignore", category=UnitsWarning)
 
-plot_filter_labels = {'u':'u', 'g':'g', 'r':'r', 'i':'i', 'z':'z', 'y':'y'}
-plot_filter_colors = {'u': '#56b4e9', 'g': '#008060', 'r': '#ff4000',
-                      'i': '#850000', 'z': '#6600cc', 'y': '#000000'}
-plot_filter_symbols = {'u': 'o', 'g': '^', 'r': 'v', 'i': 's', 'z': '*', 'y': 'p'}
-    
-def get_cutout_image(butler, ra_deg, dec_deg, visit, detector, band, cutoutSideLength, datasetType='calexp'):
+plot_filter_labels = {"u": "u", "g": "g",
+                      "r": "r", "i": "i",
+                      "z": "z", "y": "y"}
+plot_filter_colors = {
+    "u": "#56b4e9",
+    "g": "#008060",
+    "r": "#ff4000",
+    "i": "#850000",
+    "z": "#6600cc",
+    "y": "#000000",
+}
+plot_filter_symbols = {"u": "o", "g": "^",
+                       "r": "v", "i": "s",
+                       "z": "*", "y": "p"}
+
+
+def get_cutout_image(
+    butler,
+    ra_deg,
+    dec_deg,
+    visit,
+    detector,
+    band,
+    cutoutsidelength,
+    datasettype="calexp",
+):
     """
-    Get the cutout image information from butler. 
+    Get the cutout image information from butler.
     This shoudl be followed by make_fig
 
     Input Parameters
@@ -50,27 +67,28 @@ def get_cutout_image(butler, ra_deg, dec_deg, visit, detector, band, cutoutSideL
     visit : visit id
     detector : detector number
     band : band to get cutput for
-    cutoutSideLength : size of the cutout
-    
+    cutoutsidelength : size of the cutout
+
     Returns
     ----------
     Cutout image information
     """
-    cutoutSize = geom.ExtentI(cutoutSideLength, cutoutSideLength)
-    
-    radec = geom.SpherePoint(ra_deg,dec_deg, geom.degrees)
-    
-    dataId = {'visit': visit, 'detector': detector}  
-    calexp_wcs = butler.get('calexp.wcs', **dataId)
-    
+    cutoutsize = geom.ExtentI(cutoutsidelength, cutoutsidelength)
+
+    radec = geom.SpherePoint(ra_deg, dec_deg, geom.degrees)
+
+    dataid = {"visit": visit, "detector": detector}
+    calexp_wcs = butler.get("calexp.wcs", **dataid)
+
     xy = geom.PointI(calexp_wcs.skyToPixel(radec))
-    bbox = geom.BoxI(xy - cutoutSize // 2, cutoutSize)
-    parameters = {'bbox': bbox}
-    
-    cutout_image = butler.get('calexp', parameters=parameters, **dataId)
+    bbox = geom.BoxI(xy - cutoutsize // 2, cutoutsize)
+    parameters = {"bbox": bbox}
+
+    cutout_image = butler.get("calexp", parameters=parameters, **dataid)
 
     return cutout_image
-    
+
+
 def get_flux(flux_table):
     """
     Create dictionary of light curve.
@@ -79,50 +97,57 @@ def get_flux(flux_table):
     Input Parameters
     ----------
     flux_table : from query_flux
-    
+
     Returns
     ----------
     two dictionaries of days in MJD and flux for each band
     """
     pick = {}
     for filter in plot_filter_labels:
-        pick[filter] = (flux_table['band'] == filter)
+        pick[filter] = flux_table["band"] == filter
     mjd_days = {}
     mags = {}
     for filter in plot_filter_labels:
-        mjd_days[filter] = np.array(flux_table[pick[filter]]['expMidptMJD']) * u.day
-        mags[filter] = np.array(flux_table[pick[filter]]['psfMag'])
-        
+        mjd_days[filter] = (np.array(flux_table[pick[filter]]["expMidptMJD"])
+                            * u.day)
+        mags[filter] = np.array(flux_table[pick[filter]]["psfMag"])
+
     return mjd_days, mags
-    
+
+
 def plotlc(bands, days, magnitudes, out_name):
     """
     Create a light curve.
 
     Input Parameters
     ----------
-    days : dictionary for MJD in each band 
+    days : dictionary for MJD in each band
     magnitudes : dictionary for flux in each band
     out_name : file name where you'd like to save it
-    
+
     Returns
     ----------
     light curve image
     """
-    
-    fig = plt.figure(figsize=(10,4))
+
+    fig = plt.figure(figsize=(10, 4))
     for band in bands:
-        plt.plot(days[band], magnitudes[band],\
-                 plot_filter_symbols[band], ms=4, label=plot_filter_labels[band])
+        plt.plot(
+            days[band],
+            magnitudes[band],
+            plot_filter_symbols[band],
+            ms=4,
+            label=plot_filter_labels[band],
+        )
     plt.minorticks_on()
-    plt.xlabel('MJD (days)')
-    plt.ylabel('magnitude')
-    plt.legend('upper right')
+    plt.xlabel("MJD (days)")
+    plt.ylabel("magnitude")
+    plt.legend("upper right")
     plt.legend()
     plt.savefig(out_name)
     return fig
-    
-    
+
+
 def make_figure(exp, out_name):
     """
     Create an image.
@@ -151,8 +176,8 @@ def get_bandtractpatch(ra_deg, dec_deg, skymap):
     dec : dec of source in degrees
 
     """
-    spherepoint = lsst.geom.SpherePoint(
-        ra_deg * lsst.geom.degrees, dec_deg * lsst.geom.degrees
+    spherepoint = geom.SpherePoint(
+        ra_deg * geom.degrees, dec_deg * geom.degrees
     )
     tract = skymap.findTract(spherepoint)
     patch = tract.findPatch(spherepoint)
@@ -234,8 +259,9 @@ def run_tap_query(service, number_sources, use_center_coords, use_radius):
 def prep_table(results, skymap):
     results_table = results.to_table().to_pandas()
     results_table["dataId"] = results_table.apply(
-        lambda x: get_bandtractpatch(x["coord_ra"], x["coord_dec"], skymap),
-        axis=1
+        lambda x: get_bandtractpatch(x["coord_ra"],
+                                     x["coord_dec"],
+                                     skymap), axis=1
     )
     return results_table
 
@@ -251,15 +277,18 @@ def make_manifest_with_images(results_table, butler, batch_dir):
     # Loop over results_table, or any other iterable provided by the PI:
     for index, row in results_table.iterrows():
         # Use the Butler to get data for each index, row
-        deepCoadd = butler.get("deepCoadd", dataId=row["dataId"])
+        deepcoadd = butler.get("deepCoadd", dataId=row["dataId"])
         filename = "cutout" + str(row["objectId"]) + ".png"
-        figout = make_figure(deepCoadd, batch_dir + filename)
+        figout = make_figure(deepcoadd, batch_dir + filename)
 
         # Create the CSV-file-row-as-dict
         csv_row = {
-            "filename": filename,  # required column, do not change the column name
-            "objectId": row.objectId,  # required column, do not change the column name
-            "objectIdType": "DIRECT",  # required column, do not change the column name
+            # required column, do not change the column name
+            "filename": filename,
+            # required column, do not change the column name
+            "objectId": row.objectId,
+            # required column, do not change the column name
+            "objectIdType": "DIRECT",
             # Add your desired columns:
             "coord_ra": row.coord_ra,
             "coord_dec": row.coord_dec,
@@ -269,7 +298,12 @@ def make_manifest_with_images(results_table, butler, batch_dir):
             "r_inputCount": row.r_inputCount,
         }
         manifest.append(csv_row)
+<<<<<<< HEAD
         remove_figure(figout)
+=======
+        del figout
+
+>>>>>>> 4334112 (flake8 utils)
     return manifest
 
 
@@ -286,7 +320,6 @@ def make_manifest_with_tabular_data(results_table, batch_dir):
 
     # Loop over results_table, or any other iterable provided by the PI:
     for row in results_table:
-
         # csv_row = { "sourceId": str(uuid.uuid4()) }
         csv_row = {}
 
@@ -299,6 +332,7 @@ def make_manifest_with_tabular_data(results_table, batch_dir):
         manifest_dict.append(csv_row)
 
     return manifest_dict
+
 
 # The following function is from Rubin tutorial 03a:
 def cutout_calexp(butler,
@@ -333,23 +367,17 @@ def cutout_calexp(butler,
     -------
     MaskedImage: cutout image
     """
-    dataid = {'visit': visit, 'detector': detector}
-    print('ra', ra, 'dec', dec)
-    radec = geom.SpherePoint(ra,
-                             dec,
-                             geom.degrees)
-    cutoutsize = geom.ExtentI(cutoutsidelength,
-                              cutoutsidelength)
-    calexp_wcs = butler.get('calexp.wcs',
-                            **dataid)
+    dataid = {"visit": visit, "detector": detector}
+    print("ra", ra, "dec", dec)
+    radec = geom.SpherePoint(ra, dec, geom.degrees)
+    cutoutsize = geom.ExtentI(cutoutsidelength, cutoutsidelength)
+    calexp_wcs = butler.get("calexp.wcs", **dataid)
     xy = geom.PointI(calexp_wcs.skyToPixel(radec))
-    bbox = geom.BoxI(xy - cutoutsize // 2,
-                     cutoutsize)
-    parameters = {'bbox': bbox}
-    cutout_image = butler.get('calexp',
-                              parameters=parameters,
-                              **dataid)
+    bbox = geom.BoxI(xy - cutoutsize // 2, cutoutsize)
+    parameters = {"bbox": bbox}
+    cutout_image = butler.get("calexp", parameters=parameters, **dataid)
     return cutout_image
+
 
 def make_calexp_fig(cutout_image, out_name):
     """
@@ -367,27 +395,32 @@ def make_calexp_fig(cutout_image, out_name):
 
     fig = plt.figure()
     ax = plt.subplot()
-    calexp_extent = (cutout_image.getBBox().beginX,
-                     cutout_image.getBBox().endX,
-                     cutout_image.getBBox().beginY,
-                     cutout_image.getBBox().endY)
-    im = ax.imshow(abs(cutout_image.image.array),
-                   cmap='gray',
-                   extent=calexp_extent,
-                   origin='lower',
-                   norm=matplotlib.colors.LogNorm(vmin=1e1, vmax=1e5)
-                   )
-    plt.colorbar(im, location='right', anchor=(0, 0.1))
-    plt.axis('off')
+    calexp_extent = (
+        cutout_image.getBBox().beginX,
+        cutout_image.getBBox().endX,
+        cutout_image.getBBox().beginY,
+        cutout_image.getBBox().endY,
+    )
+    im = ax.imshow(
+        abs(cutout_image.image.array),
+        cmap="gray",
+        extent=calexp_extent,
+        origin="lower",
+        norm=matplotlib.colors.LogNorm(vmin=1e1, vmax=1e5),
+    )
+    plt.colorbar(im, location="right", anchor=(0, 0.1))
+    plt.axis("off")
     plt.savefig(out_name)
     return fig
 
-'''
+
+"""
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 All that follows is the experimental WCS version
 of the above functions.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-'''
+"""
+
 
 def update_wcs_center(wcs, new_center_sky):
     """
@@ -403,8 +436,8 @@ def update_wcs_center(wcs, new_center_sky):
     updated WCS
     """
     header = wcs.getFitsMetadata()
-    header['CRVAL1'] = new_center_sky.getLongitude().asDegrees()
-    header['CRVAL2'] = new_center_sky.getLatitude().asDegrees()
+    header["CRVAL1"] = new_center_sky.getLongitude().asDegrees()
+    header["CRVAL2"] = new_center_sky.getLatitude().asDegrees()
     new_wcs = WCS(header)
     return new_wcs
 
@@ -423,23 +456,24 @@ def set_wcs_ticks_labels(ax, wcs):
     -------
     updated axes labels and tick positions
     """
-    ax.coords[0].set_major_formatter('d.ddd')
+    ax.coords[0].set_major_formatter("d.ddd")
     # positions on bottom left
-    ax.coords[0].set_ticks_position('bl')
-    ax.coords[0].set_axislabel('Right Ascension')
+    ax.coords[0].set_ticks_position("bl")
+    ax.coords[0].set_axislabel("Right Ascension")
 
-    ax.coords[1].set_major_formatter('d.ddd')
-    ax.coords[1].set_ticks_position('bl')
-    ax.coords[1].set_axislabel('Declination')
+    ax.coords[1].set_major_formatter("d.ddd")
+    ax.coords[1].set_ticks_position("bl")
+    ax.coords[1].set_axislabel("Declination")
 
     # Set the maximum number of ticks for both axes
-    ax.coords[0].set_ticks(spacing=2*u.arcsec)
-    ax.coords[1].set_ticks(spacing=2*u.arcsec)
+    ax.coords[0].set_ticks(spacing=2 * u.arcsec)
+    ax.coords[1].set_ticks(spacing=2 * u.arcsec)
 
-def make_calexp_fig_WCS(cutout_image, out_name):
+
+def make_calexp_fig_wcs(cutout_image, out_name):
     """
     Create a figure of a calexp image
-    
+
     Includes the experimental WCS axes
 
     Parameters
@@ -451,42 +485,47 @@ def make_calexp_fig_WCS(cutout_image, out_name):
     ----------
     cutout figure
     """
-    print('Warning: This function is the experimental version of make_calexp_fig, to use the non-WCS version with the axes off, use make_calexp_fig')
+    print(
+        "Warning: This function is the experimental version of \
+        make_calexp_fig, to use the non-WCS version with the \
+        axes off, use make_calexp_fig"
+    )
     # Extract the WCS from the cutout image
     wcs = cutout_image.getWcs()
-    
+
     # Get the CRVAL values from the WCS metadata
-    crval1 = wcs.getFitsMetadata()['CRVAL1']
-    crval2 = wcs.getFitsMetadata()['CRVAL2']
+    crval1 = wcs.getFitsMetadata()["CRVAL1"]
+    crval2 = wcs.getFitsMetadata()["CRVAL2"]
     # Create a new SpherePoint for the center of the image
-    center_sky = geom.SpherePoint(crval1,
-                                  crval2,
-                                  geom.degrees)
+    center_sky = geom.SpherePoint(crval1, crval2, geom.degrees)
     # Modify the center (for example, shift by 1 degree)
-    new_center_sky = geom.SpherePoint(center_sky.getLongitude(),
-                                      #+ 1.0*geom.degrees,
-                                      center_sky.getLatitude())
-                                      #+ 1.0*geom.degrees)
+    new_center_sky = geom.SpherePoint(
+        center_sky.getLongitude(),
+        # + 1.0*geom.degrees,
+        center_sky.getLatitude(),
+    )
+    # + 1.0*geom.degrees)
     # Update the WCS with the new center
-    new_wcs = update_wcs_center(wcs,
-                                new_center_sky)
-    
+    new_wcs = update_wcs_center(wcs, new_center_sky)
 
     fig = plt.figure()
     ax = plt.subplot(projection=new_wcs)
-    calexp_extent = (cutout_image.getBBox().beginX,
-                     cutout_image.getBBox().endX,
-                     cutout_image.getBBox().beginY,
-                     cutout_image.getBBox().endY)
-    im = ax.imshow(abs(cutout_image.image.array),
-                   cmap='gray',
-                   extent=calexp_extent,
-                   origin='lower',
-                   norm=matplotlib.colors.LogNorm(vmin=1e1, vmax=1e5)
-                   )
-    plt.colorbar(im, location='right', anchor=(0, 0.1))
+    calexp_extent = (
+        cutout_image.getBBox().beginX,
+        cutout_image.getBBox().endX,
+        cutout_image.getBBox().beginY,
+        cutout_image.getBBox().endY,
+    )
+    im = ax.imshow(
+        abs(cutout_image.image.array),
+        cmap="gray",
+        extent=calexp_extent,
+        origin="lower",
+        norm=matplotlib.colors.LogNorm(vmin=1e1, vmax=1e5),
+    )
+    plt.colorbar(im, location="right", anchor=(0, 0.1))
     set_wcs_ticks_labels(ax, new_wcs)
-    #plt.axis('off')
+    # plt.axis('off')
     plt.savefig(out_name)
-    print('shape of image', np.shape(cutout_image.image.array))
+    print("shape of image", np.shape(cutout_image.image.array))
     return fig
