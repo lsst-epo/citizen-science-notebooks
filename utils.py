@@ -348,12 +348,7 @@ def make_manifest_with_deepcoadd_images(results_table, butler, batch_dir):
             "r_inputCount": row.r_inputCount,
         }
         manifest.append(csv_row)
-<<<<<<< HEAD
         remove_figure(figout)
-=======
-        del figout
-
->>>>>>> 4334112 (flake8 utils)
     return manifest
 
 
