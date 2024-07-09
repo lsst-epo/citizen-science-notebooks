@@ -7,6 +7,7 @@ import os
 import warnings
 import pandas as pd
 import numpy as np
+import fake.package
 
 # Astropy imports
 from astropy.wcs import WCS
