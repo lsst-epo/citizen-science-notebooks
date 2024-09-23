@@ -11,6 +11,7 @@ import numpy as np
 # Astropy imports
 from astropy.wcs import WCS
 from astropy import units as u
+from astropy.io import votable
 
 # Import the Rubin TAP service utilities
 from lsst.rsp import get_tap_service
@@ -21,6 +22,12 @@ import lsst.afw.display as afwdisplay
 # The Butler provides programmatic access to LSST data products.
 import lsst.daf.butler as dafbutler
 import lsst.geom as geom
+
+from lsst.afw.fits import MemFileManager
+from lsst.afw.image import ExposureF
+from pyvo.dal.adhoc import DatalinkResults, SodaQuery
+# ExposureF
+# MemFileManager
 
 # Must explicitly set this to save figures
 afwdisplay.setDefaultBackend("matplotlib")
@@ -321,7 +328,7 @@ def make_manifest_with_calexp_images(
     return cutouts
 
 
-def make_manifest_with_deepcoadd_images(results_table, butler, batch_dir):
+def make_manifest_with_deepcoadd_images(results_table, butler, batch_dir, service):
     # In-memory manifest file as an array of dicts
     manifest = []
 
@@ -329,31 +336,98 @@ def make_manifest_with_deepcoadd_images(results_table, butler, batch_dir):
     if os.path.isdir(batch_dir) is False:
         os.mkdir(batch_dir)
 
+    cutout_size=0.01
+
     # Loop over results_table, or any other iterable provided by the PI:
     for index, row in results_table.iterrows():
-        # Use the Butler to get data for each index, row
-        deepcoadd = butler.get("deepCoadd", dataId=row["dataId"])
-        filename = "cutout" + str(row["objectId"]) + ".png"
-        figout = make_figure(deepcoadd, batch_dir + filename)
+        filename = batch_dir + "cutout" + str(row["objectId"]) + ".png"
+        spherePoint = geom.SpherePoint(row["coord_ra"]*geom.degrees, row["coord_dec"]*geom.degrees)
+        
+        query = "SELECT access_format, access_url, dataproduct_subtype, " + \
+            "lsst_patch, lsst_tract, lsst_band, s_ra, s_dec " + \
+            "FROM ivoa.ObsCore WHERE dataproduct_type = 'image' " + \
+            "AND obs_collection = 'LSST.DP02' " + \
+            "AND dataproduct_subtype = 'lsst.deepCoadd_calexp' " + \
+            "AND lsst_tract = " + str(row["dataId"]["tract"]) + " " + \
+            "AND lsst_patch = " + str(row["dataId"]["patch"]) + " " + \
+            "AND lsst_band = " + "'" + str(row["dataId"]["band"]) + "' "
 
-        # Create the CSV-file-row-as-dict
-        csv_row = {
-            # required column, do not change the column name
-            "filename": filename,
-            # required column, do not change the column name
-            "objectId": row.objectId,
-            # required column, do not change the column name
-            "objectIdType": "DIRECT",
-            # Add your desired columns:
-            "coord_ra": row.coord_ra,
-            "coord_dec": row.coord_dec,
-            "g_cModelFlux": row.g_cModelFlux,
-            "r_cModelFlux": row.r_cModelFlux,
-            "r_extendedness": row.r_extendedness,
-            "r_inputCount": row.r_inputCount,
-        }
-        manifest.append(csv_row)
-        remove_figure(figout)
+        results = service.search(query)
+        dataLinkUrl = results[0].getdataurl() ### dataUrl
+        auth_session = service._session
+        gc.collect()  # call the garbage collector
+        dl = DatalinkResults.from_result_url(dataLinkUrl,
+                                         session=auth_session)
+
+        sq = SodaQuery.from_resource(dl,
+                                 dl.get_adhocservice_by_id("cutout-sync"),
+                                 session=auth_session)
+
+        sq.circle = (spherePoint.getRa().asDegrees() * u.deg,
+                     spherePoint.getDec().asDegrees() * u.deg,
+                     cutout_size * u.deg)
+        
+        # store the cutout data in memory:
+        cutout_bytes = sq.execute_stream().read()
+        # vot = votable.parse(cutout_bytes)
+        # print(dir(vot))
+        # print(vot)
+        # cutout = sq.execute_raw()
+        # print(cutout)
+        # print(dir(cutout))
+        # print(type(cutout))
+        gc.collect()  # call the garbage collector
+        
+        mem = MemFileManager(len(cutout_bytes))
+        mem.setData(cutout_bytes, len(cutout_bytes))
+        exposure = ExposureF(mem)
+
+        my_deepCoadd_WCS = WCS(exposure.getWcs().getFitsMetadata())
+        plt.subplot(projection=my_deepCoadd_WCS)
+        my_deepCoadd_extent = (exposure.getBBox().beginX, exposure.getBBox().endX,
+                       exposure.getBBox().beginY, exposure.getBBox().endY)
+        
+        # plot the image:
+        # fig, ax = plt.subplots() ## commenting out for WCS alt workflow
+        fig = plt.figure() ## wcs workflow
+
+        # display = afwdisplay.Display(frame=fig) ## commenting out for WCS alt workflow
+        
+        # display.scale('asinh', 'zscale')
+        # display.mtv(exposure.image)
+        # plt.show() ## commenting out so the image gets saved to file
+        swallow = plt.imshow(exposure.image.array, cmap='gray', vmin=-2.0, vmax=4,
+                extent=my_deepCoadd_extent, origin='lower');
+        swallow = plt.savefig(filename);
+
+        plt.close(fig)
+        
+        gc.collect()  # call the garbage collector
+        ############################################################################
+        
+        # # Use the Butler to get data for each index, row
+        # deepcoadd = butler.get("deepCoadd", dataId=row["dataId"])
+        # filename = "cutout" + str(row["objectId"]) + ".png"
+        # figout = make_figure(deepcoadd, batch_dir + filename)
+
+        # # Create the CSV-file-row-as-dict
+        # csv_row = {
+        #     # required column, do not change the column name
+        #     "filename": filename,
+        #     # required column, do not change the column name
+        #     "objectId": row.objectId,
+        #     # required column, do not change the column name
+        #     "objectIdType": "DIRECT",
+        #     # Add your desired columns:
+        #     "coord_ra": row.coord_ra,
+        #     "coord_dec": row.coord_dec,
+        #     "g_cModelFlux": row.g_cModelFlux,
+        #     "r_cModelFlux": row.r_cModelFlux,
+        #     "r_extendedness": row.r_extendedness,
+        #     "r_inputCount": row.r_inputCount,
+        # }
+        # manifest.append(csv_row)
+        # remove_figure(figout)
     return manifest
 
 
