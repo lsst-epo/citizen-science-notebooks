@@ -296,7 +296,9 @@ def make_manifest_with_calexp_images(
     # for each moment in time, create the calexp image
     for i, idx in enumerate(idx_select):
         if hasattr(sorted_sources, "diaObjectId") is False:
-            print("The column 'diaObjectId' is required to send data to the Zooniverse for this notebook! Please query for your data again adding 'diaObjectId' and then rerun this cell.")
+            print("The column 'diaObjectId' is required to send data to the Zooniverse" + 
+                  "for this notebook! Please query for your data again adding " +
+                  "'diaObjectId' and then rerun this cell.")
             return
         star_ra = sorted_sources["ra"][idx]
         star_dec = sorted_sources["decl"][idx]
@@ -320,7 +322,7 @@ def make_manifest_with_calexp_images(
         # and of the diaObjectId
         figout_data["diaObjectId:image_" + str(i)] = str(star_id)
         figout_data[f"metadata:diaObjectId_image_{str(i)}"] = str(star_id)
-        
+
         figout_data["filename"] = str(star_id) + "_" + str(star_ccdid) + ".png"
     cutouts.append(figout_data)
     return cutouts
@@ -355,7 +357,7 @@ def make_manifest_with_deepcoadd_images(results_table, butler, batch_dir):
             "r_inputCount": row.r_inputCount,
         }
 
-        # These columns are required in order to cross-match your completed 
+        # These columns are required in order to cross-match your completed
         if hasattr(row, "objectId"):
             has_canonical_id = True
             csv_row["objectId"] = row.objectId
@@ -367,12 +369,16 @@ def make_manifest_with_deepcoadd_images(results_table, butler, batch_dir):
             csv_row["metadata:diaObjectId"] = row.diaObjectId
             if "objectIdType" not in csv_row:
                 csv_row["objectIdType"] = "INDIRECT"
-                
+
         manifest.append(csv_row)
         remove_figure(figout)
 
     if has_canonical_id is False:
-        print("WARNING! You did not include either objectId or diaObjectId in your manifest file dataset. These fields are used to cross-match the completed classifications workflow data back to the original data. Consider rerunning this cell after adding either objectId, diaObjectId, or both.")
+        print("WARNING! You did not include either objectId or diaObjectId in your " + 
+              "manifest file dataset. These fields are used to cross-match the " +
+              "completed classifications workflow data back to the original data. " +
+              "Consider rerunning this cell after adding either objectId, " +
+              "diaObjectId, or both.")
     return manifest
 
 
