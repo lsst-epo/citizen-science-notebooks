@@ -296,9 +296,9 @@ def make_manifest_with_calexp_images(
     # for each moment in time, create the calexp image
     for i, idx in enumerate(idx_select):
         if hasattr(sorted_sources, "diaObjectId") is False:
-            print("The column 'diaObjectId' is required to send data to the Zooniverse" + 
-                  "for this notebook! Please query for your data again adding " +
-                  "'diaObjectId' and then rerun this cell.")
+            print("The column 'diaObjectId' is required to send data to the Zooniverse"
+                  + "for this notebook! Please query for your data again adding "
+                  + "'diaObjectId' and then rerun this cell.")
             return
         star_ra = sorted_sources["ra"][idx]
         star_dec = sorted_sources["decl"][idx]
@@ -374,11 +374,11 @@ def make_manifest_with_deepcoadd_images(results_table, butler, batch_dir):
         remove_figure(figout)
 
     if has_canonical_id is False:
-        print("WARNING! You did not include either objectId or diaObjectId in your " + 
-              "manifest file dataset. These fields are used to cross-match the " +
-              "completed classifications workflow data back to the original data. " +
-              "Consider rerunning this cell after adding either objectId, " +
-              "diaObjectId, or both.")
+        print("WARNING! You did not include either objectId or diaObjectId in your "
+              + "manifest file dataset. These fields are used to cross-match the "
+              + "completed classifications workflow data back to the original data. "
+              + "Consider rerunning this cell after adding either objectId, "
+              + "diaObjectId, or both.")
     return manifest
 
 
