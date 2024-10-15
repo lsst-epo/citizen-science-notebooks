@@ -361,12 +361,12 @@ def make_manifest_with_deepcoadd_images(results_table, butler, batch_dir):
         if hasattr(row, "objectId"):
             has_canonical_id = True
             csv_row["objectId"] = row.objectId
-            csv_row["#metadata:objectId"] = row.objectId
+            csv_row["//metadata:objectId"] = row.objectId
             csv_row["objectIdType"] = "DIRECT"
         if hasattr(row, "diaObjectId"):
             has_canonical_id = True
             csv_row["diaObjectId"] = row.diaObjectId
-            csv_row["#metadata:diaObjectId"] = row.diaObjectId
+            csv_row["//metadata:diaObjectId"] = row.diaObjectId
             if "objectIdType" not in csv_row:
                 csv_row["objectIdType"] = "INDIRECT"
 
