@@ -31,15 +31,10 @@ pd.set_option("display.max_rows", 20)
 warnings.simplefilter("ignore", category=UnitsWarning)
 
 plot_filter_labels = {"u": "u", "g": "g", "r": "r", "i": "i", "z": "z", "y": "y"}
-plot_filter_colors = {
-    "u": "#56b4e9",
-    "g": "#008060",
-    "r": "#ff4000",
-    "i": "#850000",
-    "z": "#6600cc",
-    "y": "#000000",
-}
-plot_filter_symbols = {"u": "o", "g": "^", "r": "v", "i": "s", "z": "*", "y": "p"}
+plot_filter_colors = {'u': '#0c71ff', 'g': '#49be61', 'r': '#c61c00', 'i': '#ffc200', 'z': '#f341a2', 'y': '#5d0000'}
+plot_filter_symbols = {'u': 'o', 'g': '^', 'r': 'v', 'i': 's', 'z': '*', 'y': 'p'}
+
+
 
 
 def get_cutout_image(
