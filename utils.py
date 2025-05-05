@@ -290,8 +290,8 @@ def make_manifest_with_calexp_images(
     cutouts = []
     # for each moment in time, create the calexp image
     for i, idx in enumerate(idx_select):
-        if hasattr(sorted_sources, "diaObjectId") is False:
-            print("The column 'diaObjectId' is required to send data to the Zooniverse"
+        if ("diaObjectId" in sorted_sources.colnames) is False:
+            print("The column 'diaObjectId' is required to send data to the Zooniverse "
                   + "for this notebook! Please query for your data again adding "
                   + "'diaObjectId' and then rerun this cell.")
             return
